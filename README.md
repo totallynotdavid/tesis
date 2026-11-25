@@ -14,8 +14,16 @@ That pins Rust, lints the crate, and runs the tests. The parity test needs
 gfortran: it builds the reference programs and runs them on files the Rust
 writers produced.
 
-- `src/`: the `kk` crate. It reads and writes the `fort.1` waveform and
-  `fort.2` structure files.
+```bash
+cargo run -- fetch events/yauca-2013/event.toml   # FDSN stations and records
+cargo run -- prep events/yauca-2013/event.toml    # fort.1
+```
+
+[docs/events.md](docs/events.md) describes the event file.
+
+- `src/`: the `kk` crate. It fetches FDSN records, converts them to `fort.1`,
+  and reads and writes the `fort.1` waveform and `fort.2` structure files.
+- `events/`: event files, one directory per event.
 - `reference/`: the Kikuchi-Kanamori Fortran 77 programs, example inputs,
   golden outputs, and the advisor's MATLAB post-processing scripts.
 - `paper/`: the thesis proposal and lab reports, in LaTeX.

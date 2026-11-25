@@ -20,8 +20,10 @@ const PI: f32 = 3.1415926;
 
 /// A ground-motion quantity. The number is how many times it differentiates
 /// displacement.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Quantity {
+    #[default]
     Displacement = 0,
     Velocity = 1,
     Acceleration = 2,
@@ -33,6 +35,16 @@ pub enum Quantity {
 pub struct Time {
     pub minute: i64,
     pub second: f32,
+}
+
+impl Time {
+    pub fn from_nanos(nanos: i64) -> Self {
+        const MINUTE: i64 = 60_000_000_000;
+        Self {
+            minute: nanos.div_euclid(MINUTE),
+            second: (nanos.rem_euclid(MINUTE) as f64 / 1e9) as f32,
+        }
+    }
 }
 
 pub struct Event {
@@ -60,6 +72,7 @@ pub struct Record {
 }
 
 /// Poles and zeros in rad/s, from ground motion in metres to counts.
+#[derive(Debug, Clone)]
 pub struct Response {
     /// The ground motion the poles and zeros take as input.
     pub units: Quantity,

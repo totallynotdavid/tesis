@@ -16,7 +16,7 @@ use kk::prep::earth::{Earth, Phase, Tables};
 use kk::prep::fft::Complex;
 use kk::prep::{self, Event, Quantity, Record, Response, Skip, Time, Window};
 
-/// The 2013-09-25 Atiquipa origin, 16:42:43.5 UTC on day 268.
+/// The 2013-09-25 Yauca origin, 16:42:43.5 UTC on day 268.
 const EVENT: (f32, f32) = (-15.84, -74.51);
 const ORIGIN_MINUTE: i64 = 16 * 60 + 42;
 const ORIGIN_SECOND: f32 = 43.5;
@@ -191,7 +191,7 @@ fn prep_matches_conv_sac_farm() {
     for (output, depth) in events {
         let earth = tables.at(depth).unwrap();
         let event = Event {
-            title: "2013 Atiquipa test".to_owned(),
+            title: "2013 Yauca test".to_owned(),
             latitude: EVENT.0,
             longitude: EVENT.1,
             origin: Time {
