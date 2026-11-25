@@ -1,5 +1,7 @@
 /reference/build/
 /target/
+/events/*/*
+!/events/*/event.toml
 
 /paper/build/*
 !/paper/build/*.pdf

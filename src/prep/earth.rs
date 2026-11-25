@@ -81,6 +81,16 @@ struct Profile {
 }
 
 impl Tables {
+    /// The tables the reference distribution ships, built into the binary.
+    pub fn jb() -> Self {
+        Self::read(
+            include_str!("../../reference/examples/input/jb.ptime"),
+            include_str!("../../reference/examples/input/jb.stime"),
+            include_str!("../../reference/examples/input/jb.table"),
+        )
+        .expect("the shipped J-B tables parse")
+    }
+
     /// Reads the texts of `jb.ptime`, `jb.stime` and `jb.table`.
     pub fn read(ptime: &str, stime: &str, table: &str) -> Result<Self, Error> {
         let table_error = |file| move |error| Error::Table { file, error };

@@ -23,6 +23,27 @@ program chain.
 A writer emits each real as Rust's shortest round-trip decimal. gfortran reads
 it back to the same bits.
 
+## Fetch
+
+`kk fetch` and `kk prep` ([src/main.rs](../src/main.rs)) take an event file,
+[docs/events.md](events.md). [src/event.rs](../src/event.rs) parses it into a
+`Config`, which gives the `Event` and P `Window` that `prep` reads. `main`
+does the HTTP and file I/O; [src/fetch/](../src/fetch/mod.rs) builds the
+requests and reads the answers.
+
+1. `fetch::station_url` asks fdsnws-station for the selected channels within
+   the event's distance range, at `level=response`.
+2. [stationxml.rs](../src/fetch/stationxml.rs) reads each channel's
+   coordinates and its first poles-and-zeros stage. A stage written in Hz is
+   converted to rad/s. A channel whose response cannot be used keeps the
+   reason, and `prep` reports it.
+3. `fetch::bulk` writes one fdsnws-dataselect line per channel, covering its
+   P window with 60 s on each side.
+4. [miniseed.rs](../src/fetch/miniseed.rs) decodes the answer with EarthScope's
+   `libmseed` crate into one trace per channel.
+5. `fetch::record` joins a channel to its trace. A channel with no trace, or
+   with a trace in more than one segment, is skipped.
+
 ## Prep
 
 [src/prep/](../src/prep/mod.rs) is `conv.sac.farm`: it turns one record into
@@ -31,7 +52,7 @@ depth, a `Record` that carries its own poles and zeros, and a `Window`. It
 returns a `Station` or the `Skip` that names why the record was dropped.
 
 1. [earth.rs](../src/prep/earth.rs) reads `jb.ptime`, `jb.stime` and
-   `jb.table` once. `Tables::at(depth)` traces the rays for that depth.
+   `jb.table`; `Tables::jb()` parses the copies built into the binary. `Tables::at(depth)` traces the rays for that depth.
    `Earth::geometry` gives azimuths, distance, slowness and spreading.
    `Earth::travel` gives the P or S onset.
 2. `convert` cuts `duration` seconds from `lead` seconds before the onset and
