@@ -1,0 +1,15 @@
+== green3
+  green3 for Peru 01/06/23 20:33 disp. -16.15 -73.40 
+== inversion3
+== graphics3
+== mom3
+  Observed record = fort.1         
+  Green functions are now being calculated for 
+    Str, dip, rake =   309.0   21.0   59.0
+  Number of Data Nij & unknowns Ne =         6600         320
+  Number of observation equations: Nijk =        6920
+beta0,var.,ABIC,rnorm**2  =   5.000E-01  3.179E-01  1.1687E+05  2.2275E+07
+  Mo, Mw, Rake, Variance =   0.299E+22   8.25  53.28  0.3179
+  ***** Inversion is completed *****
+== gr3
+ Maximum dislocation [m] =    5.33071995    

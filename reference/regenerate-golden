@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# Runs the reference programs on the two example events and stores their
+# outputs in golden/. The Rust parity tests compare against these files.
+#
+# The programs read and write fixed fort.N names in the working directory, so
+# each case runs in its own scratch directory.
+set -euo pipefail
+
+here=$(cd "$(dirname "$0")" && pwd)
+bin=$here/build/bin
+input=$here/examples/input
+golden=$here/golden
+
+make -C "$here" --quiet all
+
+# run CASE STEP...: a step is "prog" or "prog<file" when the program reads its
+# parameters from stdin.
+run() {
+  local case=$1
+  shift
+  local work
+  work=$(mktemp -d)
+  trap 'rm -rf "$work"' RETURN
+  cp "$input"/i_* "$input"/jb.* "$work"/
+  case $case in
+    denali) cp "$input"/fort.1 "$input"/fort.2 "$work"/ ;;
+    peru) cp "$input"/fort.1.Peru "$work"/fort.1; cp "$input"/fort.2.Peru "$work"/fort.2 ;;
+  esac
+  : >"$work/stdout"
+  local step prog stdin
+  for step in "$@"; do
+    prog=${step%%<*}
+    stdin=/dev/null
+    [[ $step == *"<"* ]] && stdin=$work/${step#*<}
+    echo "== $prog" >>"$work/stdout"
+    (cd "$work" && "$bin/$prog" <"$stdin" >>stdout 2>&1)
+  done
+  rm -rf "${golden:?}/$case"
+  mkdir -p "$golden/$case"
+  # Keep what the programs wrote; drop the copied inputs.
+  local f
+  for f in "$work"/*; do
+    case $(basename "$f") in
+      i_* | jb.* | fort.1 | fort.2) ;;
+      *) cp "$f" "$golden/$case"/ ;;
+    esac
+  done
+}
+
+run denali green inversion 'graphics<i_graphics' 'inversion2<i_inversion2' \
+  'graphics2<i_graphics2' plotcm
+run peru green3 inversion3 graphics3 mom3 gr3
+
+ls -l "$golden"/*
