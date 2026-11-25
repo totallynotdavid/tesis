@@ -2,6 +2,11 @@
 # Runs the reference programs on the two example events and stores their
 # outputs in golden/. The Rust parity tests compare against these files.
 #
+# Usage: regenerate-golden [--inputs DIR] [--out DIR]
+#   --inputs DIR  take fort.1, fort.2, fort.1.Peru and fort.2.Peru from DIR
+#                 instead of examples/input
+#   --out DIR     write the case directories under DIR instead of golden/
+#
 # The programs read and write fixed fort.N names in the working directory, so
 # each case runs in its own scratch directory.
 set -euo pipefail
@@ -9,7 +14,16 @@ set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 bin=$here/build/bin
 input=$here/examples/input
+waveforms=$input
 golden=$here/golden
+
+while (($#)); do
+  case $1 in
+    --inputs) waveforms=$2; shift 2 ;;
+    --out) golden=$2; shift 2 ;;
+    *) echo "unknown argument: $1" >&2; exit 2 ;;
+  esac
+done
 
 make -C "$here" --quiet all
 
@@ -23,8 +37,8 @@ run() {
   trap 'rm -rf "$work"' RETURN
   cp "$input"/i_* "$input"/jb.* "$work"/
   case $case in
-    denali) cp "$input"/fort.1 "$input"/fort.2 "$work"/ ;;
-    peru) cp "$input"/fort.1.Peru "$work"/fort.1; cp "$input"/fort.2.Peru "$work"/fort.2 ;;
+    denali) cp "$waveforms"/fort.1 "$waveforms"/fort.2 "$work"/ ;;
+    peru) cp "$waveforms"/fort.1.Peru "$work"/fort.1; cp "$waveforms"/fort.2.Peru "$work"/fort.2 ;;
   esac
   : >"$work/stdout"
   local step prog stdin
@@ -50,5 +64,3 @@ run() {
 run denali green inversion 'graphics<i_graphics' 'inversion2<i_inversion2' \
   'graphics2<i_graphics2' plotcm
 run peru green3 inversion3 graphics3 mom3 gr3
-
-ls -l "$golden"/*

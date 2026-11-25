@@ -1,0 +1,25 @@
+[tools]
+rust = { version = "1.100.0", components = "rustfmt,clippy" }
+
+[tasks.install]
+description = "Fetch the crate dependencies pinned in Cargo.lock"
+run = "cargo fetch --locked"
+
+[tasks.lint]
+description = "Check rustfmt formatting and run clippy with warnings denied"
+run = [
+  "cargo fmt --check",
+  "cargo clippy --locked --all-targets -- -D warnings",
+]
+
+[tasks.test]
+description = "Run the tests, including the gfortran parity test"
+run = "cargo test --locked"
+
+[tasks.golden]
+description = "Rebuild the Fortran programs and rewrite reference/golden"
+run = "make -C reference golden"
+
+[tasks.check]
+description = "Run every check CI runs: lint and test"
+depends = ["lint", "test"]
