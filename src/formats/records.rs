@@ -71,6 +71,10 @@ impl<'a> Read<'_, 'a> {
         self.value(|t| f32::from_str(&t.replace(['d', 'D'], "e")).ok())
     }
 
+    pub fn f64(&mut self) -> Result<f64, Error> {
+        self.value(|t| f64::from_str(&t.replace(['d', 'D'], "e")).ok())
+    }
+
     pub fn i32(&mut self) -> Result<i32, Error> {
         self.value(|t| i32::from_str(t).ok())
     }
@@ -83,31 +87,43 @@ impl<'a> Read<'_, 'a> {
         (0..n).map(|_| self.f32()).collect()
     }
 
+    /// Whether the file holds no more values. A Fortran `READ` with `END=`
+    /// takes its end branch here.
+    pub fn at_end(&mut self) -> bool {
+        while self.pending.is_empty() {
+            let Some(record) = self.records.raw() else {
+                return true;
+            };
+            self.pending = tokens(record);
+        }
+        false
+    }
+
     fn value<T>(&mut self, parse: impl Fn(&str) -> Option<T>) -> Result<T, Error> {
         let token = self.token()?;
         parse(token).ok_or_else(|| self.records.error(format!("bad value {token:?}")))
     }
 
     fn token(&mut self) -> Result<&'a str, Error> {
-        loop {
-            if let Some(token) = self.pending.pop() {
-                if token == "/" || token.contains('*') {
-                    let message = format!("unsupported list-directed token {token:?}");
-                    return Err(self.records.error(message));
-                }
-                return Ok(token);
-            }
-            let record = self
-                .records
-                .raw()
-                .ok_or_else(|| self.records.error("unexpected end of file".to_owned()))?;
-            self.pending = record
-                .split([' ', ',', '\t'])
-                .filter(|t| !t.is_empty())
-                .rev()
-                .collect();
+        if self.at_end() {
+            return Err(self.records.error("unexpected end of file".to_owned()));
         }
+        let token = self.pending.pop().unwrap_or_default();
+        if token == "/" || token.contains('*') {
+            let message = format!("unsupported list-directed token {token:?}");
+            return Err(self.records.error(message));
+        }
+        Ok(token)
     }
+}
+
+/// The values of one record, last first.
+fn tokens(record: &str) -> Vec<&str> {
+    record
+        .split([' ', ',', '\t'])
+        .filter(|t| !t.is_empty())
+        .rev()
+        .collect()
 }
 
 #[cfg(test)]

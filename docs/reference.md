@@ -55,7 +55,8 @@ Most open their parameter file `i_<program>` themselves; `graphics`,
 J-B tables `jb.ptime`, `jb.stime` and `jb.table`. `rotSH` rotates horizontal
 records to SH. `lists` and `listg` print `fort.1` and `fort.3`. The scripts in
 `reference/workflow/` (`mk_conv.farm.pl`, `rdseed2sac`, `sacmacro`) drove that
-conversion with rdseed and SAC.
+conversion with rdseed and SAC. [architecture.md](architecture.md#prep)
+describes the port of `conv.sac.farm`.
 
 ## Input files
 
