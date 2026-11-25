@@ -1,4 +1,5 @@
 /reference/build/
+/target/
 
 /paper/build/*
 !/paper/build/*.pdf

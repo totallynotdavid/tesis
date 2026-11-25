@@ -20,7 +20,9 @@ each program in `main/` against both.
 [reference/regenerate-golden](../reference/regenerate-golden) runs each example
 in a scratch directory and copies every file the programs wrote, plus their
 console output as `stdout`, into `reference/golden/<case>/`. Two runs give
-identical bytes.
+identical bytes. `--inputs DIR` takes the four waveform and structure files
+from `DIR`, and `--out DIR` writes the cases under `DIR`; the parity test uses
+both.
 
 | Case | Input | Chain | Result in `stdout` |
 | --- | --- | --- | --- |
