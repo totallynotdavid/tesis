@@ -3,14 +3,13 @@
 //! and band-pass in the frequency domain, decimate, and normalise.
 
 pub mod earth;
-pub mod fft;
 
 use std::fmt;
 use std::ops::RangeInclusive;
 
+use crate::fft::{Complex, cfft, imag_minus};
 use crate::formats::waveforms::{Instrument, Station};
 use earth::{Earth, Phase};
-use fft::{Complex, cfft, imag_minus};
 
 #[expect(
     clippy::approx_constant,

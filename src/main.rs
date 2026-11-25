@@ -6,7 +6,9 @@ use clap::{Parser, Subcommand};
 
 use kk::event::{Config, Files};
 use kk::fetch::{self, miniseed, stationxml};
+use kk::formats::greens;
 use kk::formats::waveforms::{self, Waveforms};
+use kk::green;
 use kk::prep::{self, earth::Tables};
 
 /// Kikuchi-Kanamori teleseismic body-wave inversion.
@@ -23,12 +25,16 @@ enum Command {
     Fetch { event: PathBuf },
     /// Convert the fetched records into fort.1, beside the event file.
     Prep { event: PathBuf },
+    /// Compute the Green's functions of fort.1 into fort.3, beside the event
+    /// file.
+    Green { event: PathBuf },
 }
 
 fn main() -> ExitCode {
     let result = match Cli::parse().command {
         Command::Fetch { event } => fetch(&event),
         Command::Prep { event } => prep(&event),
+        Command::Green { event } => green(&event),
     };
     match result {
         Ok(()) => ExitCode::SUCCESS,
@@ -95,6 +101,33 @@ fn prep(path: &Path) -> Result<(), String> {
         waveforms.stations.len(),
         channels.len(),
         files.fort1.display()
+    );
+    Ok(())
+}
+
+fn green(path: &Path) -> Result<(), String> {
+    let config = config(path)?;
+    let files = Files::beside(path);
+    let structure = config.structure()?;
+    let sampling = config.sampling()?;
+    let line = config.line();
+    let waveforms = waveforms::parse(&read_to_string(&files.fort1)?)
+        .map_err(|e| format!("{}: {e}", files.fort1.display()))?;
+    for station in &waveforms.stations {
+        let note = if green::is_skipped(station) {
+            "skipped: onset past the last sample"
+        } else {
+            "computed"
+        };
+        println!("{}  {note}", green::short_name(station).trim_end());
+    }
+    let greens = green::base(&structure, &waveforms, sampling, &line).map_err(|e| e.to_string())?;
+    write(&files.fort3, &greens::write(&greens))?;
+    println!(
+        "{} stations, {} depths, written to {}",
+        greens.stations.len(),
+        greens.nk,
+        files.fort3.display()
     );
     Ok(())
 }

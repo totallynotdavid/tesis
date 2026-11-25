@@ -5,13 +5,13 @@
 //! when one operand is known to be real or imaginary. Keeping the same form
 //! gives the reference's bits.
 
-use std::ops::{Add, Div, Mul, Sub};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 #[expect(
     clippy::approx_constant,
     reason = "the reference's value, one ulp above f32::consts::PI"
 )]
-const PI: f32 = 3.141593;
+pub const PI: f32 = 3.141593;
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Complex {
@@ -36,6 +36,71 @@ impl Complex {
     /// The product with the imaginary number `i c`.
     pub fn mul_imag(self, c: f32) -> Self {
         Self::new(-(self.im * c), self.re * c)
+    }
+
+    /// `exp(z)` as glibc's `cexpf` computes it for a finite argument whose
+    /// real part is below 88, the only arguments the programs pass.
+    pub fn exp(self) -> Self {
+        let (sin, cos) = if self.im.abs() > f32::MIN_POSITIVE {
+            self.im.sin_cos()
+        } else {
+            (self.im, 1.0)
+        };
+        let e = self.re.exp();
+        Self::new(e * cos, e * sin)
+    }
+
+    /// `|z|`: `cabsf` is `hypotf`.
+    pub fn abs(self) -> f32 {
+        self.re.hypot(self.im)
+    }
+
+    /// `z ** n` by libgfortran's `pow_c4_i4`: binary powering from 1.
+    pub fn powi(self, n: i32) -> Self {
+        let mut pow = Self::new(1.0, 0.0);
+        if n == 0 {
+            return pow;
+        }
+        let mut x = if n < 0 { pow / self } else { self };
+        let mut u = n.unsigned_abs();
+        loop {
+            if u & 1 == 1 {
+                pow = pow * x;
+            }
+            u >>= 1;
+            if u == 0 {
+                return pow;
+            }
+            x = x * x;
+        }
+    }
+
+    /// `log(i a)` for `a > 0`, by the branches glibc's `clogf` takes when the
+    /// real part is zero.
+    pub fn ln_imag(a: f32) -> Self {
+        debug_assert!(a > 0.0 && a.is_finite());
+        let re = if a == 1.0 {
+            0.0
+        } else if (0.5..2.0).contains(&a) {
+            ((a - 1.0) * (a + 1.0)).ln_1p() / 2.0
+        } else {
+            a.ln()
+        };
+        Self::new(re, a.atan2(0.0))
+    }
+}
+
+impl From<f32> for Complex {
+    /// Fortran's conversion of a real operand in a complex expression.
+    fn from(re: f32) -> Self {
+        Self::new(re, 0.0)
+    }
+}
+
+impl Neg for Complex {
+    type Output = Self;
+    fn neg(self) -> Self {
+        Self::new(-self.re, -self.im)
     }
 }
 

@@ -11,9 +11,9 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::str::FromStr;
 
+use kk::fft::Complex;
 use kk::formats::waveforms::{Instrument, Station};
 use kk::prep::earth::{Earth, Phase, Tables};
-use kk::prep::fft::Complex;
 use kk::prep::{self, Event, Quantity, Record, Response, Skip, Time, Window};
 
 /// The 2013-09-25 Yauca origin, 16:42:43.5 UTC on day 268.

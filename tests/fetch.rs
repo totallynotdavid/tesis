@@ -76,7 +76,7 @@ fn responses_have_unit_gain_at_their_normalisation_frequency() {
     for (channel, f) in channels.iter().zip(frequencies) {
         let response = channel.response.as_ref().unwrap();
         let w = 2.0 * std::f64::consts::PI * f;
-        let distance = |r: &kk::prep::fft::Complex| f64::from(r.re).hypot(w - f64::from(r.im));
+        let distance = |r: &kk::fft::Complex| f64::from(r.re).hypot(w - f64::from(r.im));
         let gain = f64::from(response.normalisation)
             * response.zeros.iter().map(distance).product::<f64>()
             / response.poles.iter().map(distance).product::<f64>();
