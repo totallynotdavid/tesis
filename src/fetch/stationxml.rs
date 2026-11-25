@@ -3,7 +3,7 @@
 
 use roxmltree::{Document, Node};
 
-use crate::prep::fft::Complex;
+use crate::fft::Complex;
 use crate::prep::{Quantity, Response};
 
 pub struct Channel {

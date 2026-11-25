@@ -59,7 +59,8 @@ returns a `Station` or the `Skip` that names why the record was dropped.
    removes the mean.
 3. It divides out the response, band-passes with an eighth-order zero-phase
    filter, and converts to the event's quantity in the frequency domain. The
-   FFT and the complex arithmetic are in [fft.rs](../src/prep/fft.rs).
+   FFT and the complex arithmetic, shared with `green`, are in
+   [src/fft.rs](../src/fft.rs).
 4. It decimates to the window's interval and normalises by the peak.
 
 `convert` differs from `conv.sac.farm` in four places:
@@ -72,6 +73,39 @@ returns a `Station` or the `Skip` that names why the record was dropped.
 - An output interval shorter than the record's is refused as
   `Skip::Upsampling`. The reference interpolates.
 - Counts without deconvolution (`id = 3`) are not offered.
+
+## Green
+
+`kk green` reads `fort.1` and the event file's structure and writes `fort.3`.
+[src/green/](../src/green/mod.rs) is `green` and `green3`. `base` gives the
+six base moment-tensor elements per station and source point, for `fort.3`.
+`fixed` gives one mechanism, for `fort.33`. Each synthetic is built in the
+frequency domain and transformed back with `cfft`:
+
+1. [response.rs](../src/green/response.rs) gives Q (`qfm`) and the instrument,
+   from poles and zeros (`instg`) or the WWSSN constants (`instw`).
+2. [radiation.rs](../src/green/radiation.rs) is `radp`: the P, SV and SH
+   radiation of a mechanism, up- and down-going.
+3. [propagator.rs](../src/green/propagator.rs) applies Haskell's layer
+   matrices: `refl` and `reflsh` give the source-side up- and down-going
+   waves for the depth phases, `cnvr` and `cnvrsh` convert the incident wave
+   to ground motion under the receiver, and `refl` gives the PP bounce
+   point.
+4. `Model::bodyw` combines them as `sub.bodyw.f` does.
+
+The port mirrors gfortran's `-O` arithmetic to reach bit parity: a real
+operand in a complex expression is widened to complex first, products and
+quotients are full complex operations with Smith's division, and `x**3` is
+`(x*x)*x`.
+
+`bodyw` differs from the reference in one place. The reference computes the
+P delay `tp` for P and PP only, so an SV synthetic uses the `tp` its previous
+call saved (`-fno-automatic`). `bodyw` gives SV its own.
+
+[src/formats/greens.rs](../src/formats/greens.rs) and
+[fixed.rs](../src/formats/fixed.rs) are `fort.3` and `fort.33`, gfortran
+unformatted files; [unformatted.rs](../src/formats/unformatted.rs) reads and
+writes their records.
 
 ## Parity
 
@@ -87,3 +121,11 @@ precision fails the test.
 It writes six synthetic SAC records and a station inside 30 degrees, runs
 the copy and `convert` on them for three output quantities and depths, and
 requires every value to be equal. A one-ulp change in pi fails it.
+
+[tests/green.rs](../tests/green.rs) requires `base` on the Denali example
+and `fixed` on the Peru example to write the golden `fort.3` and `fort.33`
+byte for byte. The goldens hold only P vertical and SH records on GDSN
+instruments without poles, so the test also builds `green` with an SV `tp`
+patched in. It runs that build on Denali stations rewritten to SV, PP,
+horizontal components, WWSSN and poles and zeros, over four depths, under two
+structures. Every sample must match.
