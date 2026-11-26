@@ -1,0 +1,8 @@
+# The structure of the reference's 2001 Arequipa example
+# (reference/examples/input/fort.2.Peru), the advisor's model.
+title = "Arequipa 2001: 2 layers+3km water"
+tq_p = 1.0
+tq_s = 4.0
+source = [[1.50, 0.00, 1.00, 3.0], [6.50, 3.74, 2.87, 15.0], [7.80, 4.40, 3.30, 0.0]]
+receiver = [[5.57, 3.36, 2.65, 15.0], [6.50, 3.74, 2.87, 18.0], [7.80, 4.40, 3.30, 0.0]]
+bounce = [[6.50, 3.74, 2.87, 0.0]]

@@ -1,0 +1,32 @@
+title = "Yauca 2018"
+origin = "2018-01-14T09:18:45.5"
+latitude = -15.77
+longitude = -74.71
+depth = 39
+structure = "../../structures/arequipa-2001.toml"
+
+[p]
+lead = 10
+duration = 120
+dt = 0.5
+low = 0.002
+high = 1.0
+
+# USGS W-phase solution, event us2000cjfy.
+[catalogue]
+source = "USGS Mww"
+moment = 5.9e19
+depth = 40.5
+strike = 130.5
+dip = 51.34
+rake = 88.07
+
+[inversion]
+length = 60
+max_velocity = 4.0
+time_function = { shape = "trapezoid", t1 = 2, t2 = 4 }
+spans = [20, 20]
+basis = "double-couple"
+shift = -10
+# Along the trench strike, the hypocentre third of five.
+grid = { line = { azimuth = 310, spacing = 10, count = 5, reference = 3 } }

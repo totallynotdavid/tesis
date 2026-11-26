@@ -1,3 +1,4 @@
+pub mod compare;
 pub mod event;
 pub mod fetch;
 pub mod fft;
