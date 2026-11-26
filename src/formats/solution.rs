@@ -1,9 +1,8 @@
-//! What `inversion` writes: the `fort.16` report, the `fort.4` plot data
-//! and its one line on standard output.
+//! What `inversion` finds, the `fort.16` report and its one line on standard
+//! output. [`super::plot`] holds the `fort.4` plot data.
 
 use super::fortran::{f, i};
 use super::inversion::{Basis, TimeFunction};
-use super::unformatted::{padded, reals, record};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Solution {
@@ -232,58 +231,6 @@ fn extent(max_velocity: f32, spans: &[f32]) -> Vec<String> {
     }
     lines.push(line);
     lines
-}
-
-/// The `fort.4` plot data.
-pub fn plot(s: &Solution) -> Vec<u8> {
-    let mut out = Vec::new();
-    let ints =
-        |values: &[i32]| -> Vec<u8> { values.iter().flat_map(|v| v.to_le_bytes()).collect() };
-    let t = s.time_function;
-    record(&mut out, &padded(&s.title, 40));
-    let mut header = ints(&[s.stations.len() as i32, s.source.len() as i32]);
-    header.extend(reals(&[s.dt]));
-    header.extend(ints(&[s.spans.len() as i32]));
-    header.extend(reals(&[t.t1, t.t2]));
-    header.extend(ints(&[t.shape.code()]));
-    record(&mut out, &header);
-    record(&mut out, &reals(&s.source));
-    let mut line = ints(&[s.points.len() as i32]);
-    line.extend(reals(&[s.dk]));
-    line.extend(ints(&[s.nk as i32, s.k0]));
-    record(&mut out, &line);
-    let points: Vec<f32> = s.points.iter().flat_map(|&(r, phi)| [r, phi]).collect();
-    record(&mut out, &reals(&points));
-    for st in &s.stations {
-        let mut name = padded(&st.name, 12);
-        name.extend(ints(&[st.instrument, st.phase, st.component]));
-        record(&mut out, &name);
-        record(&mut out, &reals(&[st.azimuth, st.slowness * st.velocity]));
-        record(&mut out, &reals(&st.observed));
-    }
-    let last = s.rounds.last().map(Vec::as_slice).unwrap_or(&[]);
-    for (n, e) in last.iter().enumerate() {
-        let m = e.mechanism;
-        let mut row = ints(&[n as i32 + 1]);
-        row.extend(reals(&[
-            e.time, e.distance, e.azimuth, e.offset, m.moment, m.second, m.strike, m.dip, m.slip,
-        ]));
-        record(&mut out, &row);
-        record(&mut out, &reals(&e.tensor));
-        record(&mut out, &reals(&e.axis));
-    }
-    record(&mut out, &reals(&[s.variance]));
-    for st in &s.stations {
-        record(&mut out, &reals(&st.residual));
-    }
-    let m = s.total;
-    record(
-        &mut out,
-        &reals(&[m.moment, m.second, m.strike, m.dip, m.slip]),
-    );
-    record(&mut out, &reals(&s.tensor));
-    record(&mut out, &reals(&s.axis));
-    out
 }
 
 /// The line `inversion` prints on standard output.

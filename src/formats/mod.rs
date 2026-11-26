@@ -5,6 +5,7 @@ pub mod fixed;
 pub mod fortran;
 pub mod greens;
 pub mod inversion;
+pub mod plot;
 pub mod records;
 pub mod solution;
 pub mod structure;

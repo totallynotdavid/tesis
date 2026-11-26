@@ -134,7 +134,8 @@ and the cubic and quadratic solvers. [mechanism.rs](../src/inversion/mechanism.r
 holds the determinants, the double-couple constraint `zmom`, and `dcp`, which
 splits a tensor into a double couple and its axes.
 [src/formats/solution.rs](../src/formats/solution.rs) writes the `Solution`
-as `fort.16`, `fort.4` and the summary line. [fortran.rs](../src/formats/fortran.rs)
+as `fort.16` and the summary line, and [plot.rs](../src/formats/plot.rs) as
+`fort.4`. [fortran.rs](../src/formats/fortran.rs)
 formats reals and integers as gfortran's `F` and `I` descriptors do.
 
 Fortran `REAL` is `f32`, so the port computes in `f32`. It keeps the
@@ -155,6 +156,22 @@ or runs on bad input:
   and 11 depths, 50 subevents and 40 stations.
 - The reference calls `dcp` at every improved grid point and discards the
   result. `invert` calls it once per subevent.
+
+## Plot
+
+`kk plot` reads `fort.4` into a [Plot](../src/formats/plot.rs) and draws it as
+two SVG files. It replaces `graphics`, which writes PostScript.
+[src/plot/mod.rs](../src/plot/mod.rs) lays out the figures and
+[svg.rs](../src/plot/svg.rs) writes the elements; there is no drawing crate.
+
+[sphere.rs](../src/plot/sphere.rs) holds the focal sphere in the reference's
+frame: x north, y east, z down, on a lower-hemisphere equal-area net. A ball
+fills where the tensor's P amplitude `dᵀMd` is positive, row by row, and draws
+the nodal planes from strike, dip and slip with Aki and Richards' normal and
+slip vectors. Stations sit at their azimuth and the takeoff angle
+`asin(p v)`, where `fort.4` stores the slowness times the source velocity. [tests/plot.rs](../tests/plot.rs) checks on the
+Denali `fort.4` that each nodal plane lies where its tensor radiates nothing
+and that the T axis is compressional.
 
 ## Parity
 
