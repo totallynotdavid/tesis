@@ -109,7 +109,15 @@ pub enum Skip {
     Upsampling,
     /// The window is zero after filtering.
     Flat,
+    /// The spreading-corrected peak is this many times the median of its
+    /// component's stations.
+    Amplitude(f32),
 }
+
+/// The largest [`Skip::Amplitude`] ratio a station keeps. A double couple's P
+/// radiation keeps every station within a few times the median; a drifting or
+/// mis-scaled channel lands tens of times above it.
+pub const OUTLIER: f32 = 5.0;
 
 impl fmt::Display for Skip {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -121,6 +129,7 @@ impl fmt::Display for Skip {
             Self::ShortWindow => f.write_str("the window holds no samples"),
             Self::Upsampling => f.write_str("the output interval is shorter than the record's"),
             Self::Flat => f.write_str("the filtered window is zero"),
+            Self::Amplitude(r) => write!(f, "amplitude {r:.0} times the network median"),
         }
     }
 }
@@ -196,6 +205,32 @@ pub fn convert(
         dt: window.dt,
         samples,
     })
+}
+
+/// The skip for each station whose peak, divided by its geometrical
+/// spreading, exceeds [`OUTLIER`] times the median of the stations on its
+/// component. A component with fewer than three stations is not checked.
+pub fn outliers(stations: &[Station]) -> Vec<Option<Skip>> {
+    let corrected = |s: &Station| s.peak / s.spreading;
+    let median = |component: i32| {
+        let mut peaks: Vec<f32> = stations
+            .iter()
+            .filter(|s| s.component == component)
+            .map(corrected)
+            .collect();
+        if peaks.len() < 3 {
+            return None;
+        }
+        peaks.sort_by(f32::total_cmp);
+        Some(peaks[peaks.len() / 2])
+    };
+    stations
+        .iter()
+        .map(|s| {
+            let ratio = corrected(s) / median(s.component)?;
+            (ratio > OUTLIER).then_some(Skip::Amplitude(ratio))
+        })
+        .collect()
 }
 
 /// `ic`: 1 vertical, 2 north, 3 east. Channels ending in 1 and 2 count as
@@ -314,4 +349,61 @@ fn name(event: &Event, record: &Record, window: &Window, travel: f32) -> String 
         "{:<12.12}{minute:>4}{second:>7.2}{:>8.2}{:>7.2}{:>7.2}",
         record.code, -window.lead, window.low, window.high
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn station(component: i32, peak: f32, spreading: f32) -> Station {
+        Station {
+            name: String::new(),
+            azimuth: 0.0,
+            back_azimuth: 0.0,
+            distance: 60.0,
+            slowness: 0.0,
+            spreading,
+            onset: 20,
+            phase: 1,
+            component,
+            instrument: Instrument::Gdsn {
+                power: 0,
+                magnification: 1.0,
+                normalisation: 1.0,
+                poles: Vec::new(),
+                zeros: Vec::new(),
+            },
+            peak,
+            dt: 0.5,
+            samples: Vec::new(),
+        }
+    }
+
+    /// Yauca's peaks and spreading factors: RCBR's drifting channel against
+    /// the weakest and strongest good stations.
+    #[test]
+    fn a_drifting_channel_is_skipped_and_the_spread_of_good_ones_kept() {
+        let stations = [
+            station(1, 65.4, 6.95),
+            station(1, 49.4, 9.30),
+            station(1, 54.5, 5.10),
+            station(1, 1654.0, 10.42),
+            station(1, 62.8, 6.57),
+        ];
+        let skips = outliers(&stations);
+        assert!(matches!(skips[3], Some(Skip::Amplitude(r)) if r > OUTLIER));
+        assert!(skips.iter().enumerate().all(|(i, s)| i == 3 || s.is_none()));
+    }
+
+    #[test]
+    fn components_are_compared_only_with_themselves() {
+        let stations = [
+            station(1, 10.0, 1.0),
+            station(1, 11.0, 1.0),
+            station(1, 12.0, 1.0),
+            station(2, 500.0, 1.0),
+            station(2, 520.0, 1.0),
+        ];
+        assert!(outliers(&stations).iter().all(Option::is_none));
+    }
 }

@@ -17,8 +17,14 @@ II.ASCN.00.BHZ  skipped: no data returned
 II.CMLA.00.BHZ  converted
 II.EFI.00.BHZ  converted
 ...
-35 of 39 channels written to events/yauca-2013/fort.1
+IU.RCBR.00.BHZ  skipped: amplitude 22 times the network median
+...
+34 of 39 channels written to events/yauca-2013/fort.1
 ```
+
+A station is skipped when its peak, corrected for geometrical spreading, is
+more than 5 times the median of the stations on its component. P radiation
+cannot put a working channel that far above the rest.
 
 ## Fields
 
@@ -105,7 +111,7 @@ CMLA  computed
 EFI  computed
 FFC  computed
 ...
-35 stations, 1 depths, written to events/yauca-2013/fort.3
+34 stations, 1 depths, written to events/yauca-2013/fort.3
 ```
 
 ## Inversion
@@ -170,7 +176,7 @@ A line has `count` points `spacing` km apart along `azimuth`. Point
 It prints the moment magnitude and the residual variance:
 
 ```text
- Mw, Var. =    7.60  0.9758
+ Mw, Var. =    6.88  0.4956
 ```
 
 ## Plot
