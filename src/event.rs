@@ -8,6 +8,7 @@ use libmseed::NsTime;
 use serde::{Deserialize, Deserializer};
 
 use crate::formats::inversion::{Basis, Grid, Parameters, TimeFunction};
+use crate::formats::solution::Mechanism;
 use crate::formats::structure::{Layer, Structure};
 use crate::formats::waveforms::Waveforms;
 use crate::green::{self, Line, Sampling};
@@ -34,10 +35,26 @@ pub struct Config {
     #[serde(default)]
     pub stations: Stations,
     pub p: P,
-    pub structure: Option<Model>,
+    /// A structure file, relative to the event file.
+    pub structure: Option<PathBuf>,
     #[serde(default)]
     pub green: Green,
     pub inversion: Option<Inversion>,
+    pub catalogue: Option<Catalogue>,
+}
+
+/// A published solution to compare the inversion with.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Catalogue {
+    pub source: String,
+    /// Scalar moment in N m.
+    pub moment: f32,
+    /// Centroid depth in km.
+    pub depth: f32,
+    pub strike: f32,
+    pub dip: f32,
+    pub rake: f32,
 }
 
 /// The `i_inversion` parameters. [`Parameters`] documents each field.
@@ -62,11 +79,12 @@ pub struct Inversion {
     pub grid: Grid,
 }
 
-/// The `fort.2` velocity structure. Each layer is `[vp, vs, density,
-/// thickness]` in km/s, g/cm3 and km, top down; the last is the half-space.
+/// A structure file: the `fort.2` velocity structure. Each layer is `[vp, vs,
+/// density, thickness]` in km/s, g/cm3 and km, top down; the last is the
+/// half-space.
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct Model {
+struct Model {
     pub title: String,
     pub tq_p: f32,
     pub tq_s: f32,
@@ -178,30 +196,10 @@ impl Config {
         }
     }
 
-    pub fn structure(&self) -> Result<Structure, String> {
-        let model = self.structure.as_ref().ok_or("no [structure] table")?;
-        let layers = |rows: &[[f32; 4]], name: &str| -> Result<Vec<Layer>, String> {
-            if rows.is_empty() {
-                return Err(format!("structure.{name} has no layers"));
-            }
-            Ok(rows
-                .iter()
-                .map(|&[vp, vs, density, thickness]| Layer {
-                    vp,
-                    vs,
-                    density,
-                    thickness,
-                })
-                .collect())
-        };
-        Ok(Structure {
-            title: model.title.clone(),
-            tq_p: model.tq_p,
-            tq_s: model.tq_s,
-            source: layers(&model.source, "source")?,
-            receiver: layers(&model.receiver, "receiver")?,
-            bounce: layers(&model.bounce, "bounce")?,
-        })
+    /// The structure file the event file at `path` names.
+    pub fn structure_path(&self, path: &Path) -> Result<PathBuf, String> {
+        let file = self.structure.as_ref().ok_or("no structure file")?;
+        Ok(path.parent().unwrap_or(Path::new(".")).join(file))
     }
 
     pub fn sampling(&self) -> Result<Sampling, String> {
@@ -259,7 +257,64 @@ impl Config {
     }
 }
 
+impl Catalogue {
+    /// The catalogue double couple, with the moment in 1e18 N m as
+    /// `inversion` gives it.
+    pub fn mechanism(&self) -> Mechanism {
+        Mechanism {
+            moment: self.moment / 1e18,
+            second: 0.0,
+            strike: self.strike,
+            dip: self.dip,
+            slip: self.rake,
+        }
+    }
+}
+
+/// Parse a structure file.
+pub fn structure(text: &str) -> Result<Structure, String> {
+    let model: Model = toml::from_str(text).map_err(|e| e.to_string())?;
+    let layers = |rows: &[[f32; 4]], name: &str| -> Result<Vec<Layer>, String> {
+        if rows.is_empty() {
+            return Err(format!("{name} has no layers"));
+        }
+        Ok(rows
+            .iter()
+            .map(|&[vp, vs, density, thickness]| Layer {
+                vp,
+                vs,
+                density,
+                thickness,
+            })
+            .collect())
+    };
+    Ok(Structure {
+        title: model.title,
+        tq_p: model.tq_p,
+        tq_s: model.tq_s,
+        source: layers(&model.source, "source")?,
+        receiver: layers(&model.receiver, "receiver")?,
+        bounce: layers(&model.bounce, "bounce")?,
+    })
+}
+
 impl Files {
+    /// The same files, with the Green's functions, the inversion and the
+    /// figures moved into `dir`. The records and `fort.1` stay.
+    pub fn under(&self, dir: &Path) -> Self {
+        let name = |p: &Path| dir.join(p.file_name().expect("a file path"));
+        Self {
+            stations: self.stations.clone(),
+            waveforms: self.waveforms.clone(),
+            fort1: self.fort1.clone(),
+            fort3: name(&self.fort3),
+            fort4: name(&self.fort4),
+            fort16: name(&self.fort16),
+            solution: name(&self.solution),
+            fits: name(&self.fits),
+        }
+    }
+
     /// The files beside the event file at `path`.
     pub fn beside(path: &Path) -> Self {
         let dir = path.parent().unwrap_or(Path::new("."));

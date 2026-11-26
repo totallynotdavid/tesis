@@ -107,7 +107,7 @@ pub fn compressions(m: &[[f64; 3]; 3], n: usize) -> Vec<(f64, f64, f64)> {
     runs
 }
 
-fn cross(a: Vector, b: Vector) -> Vector {
+pub fn cross(a: Vector, b: Vector) -> Vector {
     [
         a[1] * b[2] - a[2] * b[1],
         a[2] * b[0] - a[0] * b[2],

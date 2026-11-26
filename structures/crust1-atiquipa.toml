@@ -1,0 +1,10 @@
+# CRUST1.0 (Laske et al. 2013) in the 1-degree cell 15-16 S, 74-75 W, which
+# holds the 2013, 2018 and 2024 epicentres: 0.25 km of sediment over three
+# crustal layers, Moho 40 km under the surface. The surface is at sea level,
+# not CRUST1.0's 0.79 km. ak135's crust under the receivers.
+title = "CRUST1.0 15-16S 74-75W"
+tq_p = 1.0
+tq_s = 4.0
+source = [[2.50, 1.07, 2.11, 0.25], [6.00, 3.50, 2.72, 13.12], [6.60, 3.80, 2.86, 13.12], [7.20, 4.10, 3.03, 13.51], [8.04, 4.47, 3.31, 0.0]]
+receiver = [[5.80, 3.46, 2.72, 20.0], [6.50, 3.85, 2.92, 15.0], [8.04, 4.48, 3.32, 0.0]]
+bounce = [[6.50, 3.74, 2.87, 0.0]]

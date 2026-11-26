@@ -179,6 +179,15 @@ slip vectors. Stations sit at their azimuth and the takeoff angle
 Denali `fort.4` that each nodal plane lies where its tensor radiates nothing
 and that the T axis is compressional.
 
+## Sweep
+
+`kk sweep` ([src/main.rs](../src/main.rs)) reads `fort.1` once and runs the
+Green's functions, the inversion and the figures for each structure file.
+`Files::under` in [src/event.rs](../src/event.rs) moves the outputs into a
+directory per structure. [src/compare.rs](../src/compare.rs) gives Kagan's
+angle between the total and the event file's `[catalogue]` double couple,
+from the T, P and B axes of each.
+
 ## Parity
 
 [tests/parity.rs](../tests/parity.rs) parses the four example inputs, writes

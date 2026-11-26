@@ -1,0 +1,8 @@
+# PREM's crust and uppermost mantle (Dziewonski and Anderson 1981) under 3 km
+# of water at the source; PREM's continental crust under the receivers.
+title = "PREM, 3 km water"
+tq_p = 1.0
+tq_s = 4.0
+source = [[1.50, 0.00, 1.02, 3.0], [5.80, 3.20, 2.60, 12.0], [6.80, 3.90, 2.90, 9.4], [8.08, 4.47, 3.38, 0.0]]
+receiver = [[5.80, 3.20, 2.60, 15.0], [6.80, 3.90, 2.90, 9.4], [8.08, 4.47, 3.38, 0.0]]
+bounce = [[6.50, 3.74, 2.87, 0.0]]

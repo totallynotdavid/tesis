@@ -6,6 +6,7 @@ kk prep events/yauca-2013/event.toml    # writes fort.1
 kk green events/yauca-2013/event.toml   # writes fort.3
 kk invert events/yauca-2013/event.toml  # writes fort.16 and fort.4
 kk plot events/yauca-2013/event.toml    # writes solution.svg and waveforms.svg
+kk sweep events/yauca-2013/event.toml structures/*.toml  # one run per structure
 ```
 
 Each command reads the event file and keeps its files in the event file's
@@ -28,8 +29,8 @@ cannot put a working channel that far above the rest.
 
 ## Fields
 
-[events/yauca-2013/event.toml](../events/yauca-2013/event.toml) is the
-thesis event:
+[events/](../events/) holds the three M7.1–7.2 thrusts off Atiquipa:
+`yauca-2013`, `yauca-2018` and `yauca-2024`. The 2013 file starts:
 
 ```toml
 title = "Yauca 2013"
@@ -37,6 +38,7 @@ origin = "2013-09-25T16:42:43.5"
 latitude = -15.84
 longitude = -74.51
 depth = 40
+structure = "../../structures/arequipa-2001.toml"
 
 [p]
 lead = 10
@@ -52,6 +54,7 @@ high = 1.0
 | `origin` | Origin time, UTC, ISO 8601. | required |
 | `latitude`, `longitude` | Epicentre in degrees. | required |
 | `depth` | Source depth in km. It selects the J-B travel-time column. | required |
+| `structure` | The structure file, relative to the event file. `kk green` needs it. | none |
 | `output` | `displacement`, `velocity` or `acceleration`. | `displacement` |
 | `distances` | Epicentral distance range in degrees. | `[30, 90]` |
 | `p.lead` | Seconds kept before the P onset. | required |
@@ -70,13 +73,26 @@ The `[stations]` table selects the channels, in FDSN query syntax:
 
 ## Green's functions
 
-`kk green` needs the `[structure]` table, which is the `fort.2` velocity
-structure. The Yauca file uses the structure of the reference's 2001 Arequipa
-example:
+`kk green` needs a structure file, which is the `fort.2` velocity structure.
+The event file names it with a path relative to itself:
 
 ```toml
-[structure]
-title = "2 layers+3km water"
+structure = "../../structures/arequipa-2001.toml"
+```
+
+[structures/](../structures/) holds four:
+
+| File | Structure |
+| --- | --- |
+| `arequipa-2001.toml` | The reference's 2001 Arequipa example: 3 km of water over one 15 km crustal layer. |
+| `prem-ocean.toml` | PREM's crust under 3 km of water at the source, PREM's continental crust under the receivers. |
+| `ak135.toml` | ak135's 35 km continental crust at the source and under the receivers. |
+| `crust1-atiquipa.toml` | CRUST1.0's cell holding the Atiquipa epicentres at the source, 40 km of crust; ak135 under the receivers. |
+
+A structure file holds these fields:
+
+```toml
+title = "Arequipa 2001: 2 layers+3km water"
 tq_p = 1.0
 tq_s = 4.0
 source = [[1.50, 0.00, 1.00, 3.0], [6.50, 3.74, 2.87, 15.0], [7.80, 4.40, 3.30, 0.0]]
@@ -178,6 +194,46 @@ It prints the moment magnitude and the residual variance:
 ```text
  Mw, Var. =    6.88  0.4956
 ```
+
+## Sweep
+
+`kk sweep` runs `green`, `invert` and `plot` once per structure file. Each
+run writes its files into a directory beside the event file, named for the
+structure file, and prints one line:
+
+```bash
+kk sweep events/yauca-2013/event.toml structures/*.toml
+```
+
+```text
+USGS Mww: M0 5.00e19 N m, Mw 7.07, 125/67/87, 45 km
+structure               Mw M0/e19 ratio    var. strike/dip/rk  kagan
+ak135                 6.91   2.96  0.59  0.3941     132/55/96     14
+arequipa-2001         6.88   2.59  0.52  0.4956     128/53/98     17
+crust1-atiquipa       6.92   2.99  0.60  0.4138    120/53/100     22
+prem-ocean            6.99   3.82  0.76  0.5262    129/52/101     19
+```
+
+`ratio` is the total moment over the catalogue's. `kagan` is the smallest
+rotation, in degrees, between the total double couple and the catalogue's.
+Both need the `[catalogue]` table:
+
+```toml
+[catalogue]
+source = "USGS Mww"
+moment = 5.0e19
+depth = 45
+strike = 125
+dip = 67
+rake = 87
+```
+
+| Field | Meaning |
+| --- | --- |
+| `source` | The catalogue and solution type, printed on the first line. |
+| `moment` | Scalar moment in N m. |
+| `depth` | Centroid depth in km. |
+| `strike`, `dip`, `rake` | Either nodal plane, in degrees. |
 
 ## Plot
 

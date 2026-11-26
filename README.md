@@ -20,6 +20,7 @@ cargo run -- prep events/yauca-2013/event.toml    # fort.1
 cargo run -- green events/yauca-2013/event.toml   # fort.3
 cargo run -- invert events/yauca-2013/event.toml  # fort.16 and fort.4
 cargo run -- plot events/yauca-2013/event.toml    # solution.svg and waveforms.svg
+cargo run -- sweep events/yauca-2013/event.toml structures/*.toml  # one run per structure
 ```
 
 [docs/events.md](docs/events.md) describes the event file.
@@ -28,6 +29,7 @@ cargo run -- plot events/yauca-2013/event.toml    # solution.svg and waveforms.s
   computes the Green's functions into `fort.3`, and inverts them for the
   subevents into `fort.16` and `fort.4`, and draws the solution as SVG.
 - `events/`: event files, one directory per event.
+- `structures/`: velocity structures for `kk green` and `kk sweep`.
 - `reference/`: the Kikuchi-Kanamori Fortran 77 programs, example inputs,
   golden outputs, and the advisor's MATLAB post-processing scripts.
 - `paper/`: the thesis proposal and lab reports, in LaTeX.

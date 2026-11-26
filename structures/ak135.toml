@@ -1,0 +1,8 @@
+# ak135's continental crust and uppermost mantle (Kennett, Engdahl and Buland
+# 1995) at the source and under the receivers; no water.
+title = "ak135"
+tq_p = 1.0
+tq_s = 4.0
+source = [[5.80, 3.46, 2.72, 20.0], [6.50, 3.85, 2.92, 15.0], [8.04, 4.48, 3.32, 0.0]]
+receiver = [[5.80, 3.46, 2.72, 20.0], [6.50, 3.85, 2.92, 15.0], [8.04, 4.48, 3.32, 0.0]]
+bounce = [[6.50, 3.74, 2.87, 0.0]]

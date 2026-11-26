@@ -1,0 +1,38 @@
+title = "Yauca 2024"
+origin = "2024-06-28T05:36:36.9"
+latitude = -15.83
+longitude = -74.45
+depth = 24
+structure = "../../structures/arequipa-2001.toml"
+
+[p]
+lead = 10
+duration = 120
+dt = 0.5
+low = 0.002
+high = 1.0
+
+# USGS W-phase solution, event us6000n8tq.
+[catalogue]
+source = "USGS Mww"
+moment = 6.96e19
+depth = 17.5
+strike = 163.72
+dip = 76.6
+rake = 99.02
+
+# The hypocentre is at 24 km; USGS's body-wave and Mwc centroids are at 40
+# and 36 km. The residual variance is least at 36.
+[green]
+h0 = 36
+
+[inversion]
+length = 60
+max_velocity = 4.0
+time_function = { shape = "trapezoid", t1 = 2, t2 = 4 }
+# A third subevent lowers the variance from 0.24 to 0.23 and adds moment.
+spans = [20, 20, 40]
+basis = "double-couple"
+shift = -10
+# Along the trench strike, the hypocentre third of five.
+grid = { line = { azimuth = 310, spacing = 10, count = 5, reference = 3 } }
