@@ -52,7 +52,8 @@ impl<'a> Records<'a> {
         }
     }
 
-    fn error(&self, message: String) -> Error {
+    /// An error at the last record read.
+    pub fn error(&self, message: String) -> Error {
         Error {
             line: self.line,
             message,

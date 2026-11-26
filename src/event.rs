@@ -1,13 +1,16 @@
 //! The event file: the source, which stations to fetch, and how to cut and
 //! filter their P windows. The fetched files live beside it.
 
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use libmseed::NsTime;
 use serde::{Deserialize, Deserializer};
 
+use crate::formats::inversion::{Basis, Grid, Parameters, TimeFunction};
 use crate::formats::structure::{Layer, Structure};
-use crate::green::{Line, Sampling};
+use crate::formats::waveforms::Waveforms;
+use crate::green::{self, Line, Sampling};
 use crate::prep::earth::Phase;
 use crate::prep::{Event, Quantity, Time, Window};
 
@@ -34,6 +37,29 @@ pub struct Config {
     pub structure: Option<Model>,
     #[serde(default)]
     pub green: Green,
+    pub inversion: Option<Inversion>,
+}
+
+/// The `i_inversion` parameters. [`Parameters`] documents each field.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Inversion {
+    /// Defaults to the event title.
+    pub title: Option<String>,
+    pub length: f32,
+    pub max_velocity: f32,
+    pub time_function: TimeFunction,
+    pub spans: Vec<f32>,
+    pub basis: Basis,
+    #[serde(default)]
+    pub shift: i32,
+    /// The weight of every station not in `weights`.
+    #[serde(default = "one")]
+    pub weight: f32,
+    /// Weights by station code.
+    #[serde(default)]
+    pub weights: BTreeMap<String, f32>,
+    pub grid: Grid,
 }
 
 /// The `fort.2` velocity structure. Each layer is `[vp, vs, density,
@@ -119,6 +145,8 @@ pub struct Files {
     pub waveforms: PathBuf,
     pub fort1: PathBuf,
     pub fort3: PathBuf,
+    pub fort4: PathBuf,
+    pub fort16: PathBuf,
 }
 
 impl Config {
@@ -185,6 +213,39 @@ impl Config {
         })
     }
 
+    /// The inversion parameters for the stations of `waveforms`. Weights
+    /// follow the stations `green` kept, in order.
+    pub fn parameters(&self, waveforms: &Waveforms) -> Result<Parameters, String> {
+        let inv = self.inversion.as_ref().ok_or("no [inversion] table")?;
+        let kept: Vec<String> = waveforms
+            .stations
+            .iter()
+            .filter(|s| !green::is_skipped(s))
+            .map(|s| green::short_name(s).trim_end().to_owned())
+            .collect();
+        if let Some(code) = inv.weights.keys().find(|code| !kept.contains(code)) {
+            return Err(format!("inversion.weights: no kept station {code}"));
+        }
+        if inv.spans.is_empty() {
+            return Err("inversion.spans is empty".into());
+        }
+        let weights = kept
+            .iter()
+            .map(|code| inv.weights.get(code).copied().unwrap_or(inv.weight))
+            .collect();
+        Ok(Parameters {
+            title: inv.title.clone().unwrap_or_else(|| self.title.clone()),
+            length: inv.length,
+            max_velocity: inv.max_velocity,
+            time_function: inv.time_function,
+            spans: inv.spans.clone(),
+            weights,
+            shift: inv.shift,
+            basis: inv.basis,
+            grid: inv.grid.clone(),
+        })
+    }
+
     pub fn line(&self) -> Line {
         Line {
             h0: self.green.h0.unwrap_or(self.depth),
@@ -205,12 +266,18 @@ impl Files {
             waveforms: dir.join("waveforms.mseed"),
             fort1: dir.join("fort.1"),
             fort3: dir.join("fort.3"),
+            fort4: dir.join("fort.4"),
+            fort16: dir.join("fort.16"),
         }
     }
 }
 
 fn distances() -> [f32; 2] {
     [30.0, 90.0]
+}
+
+fn one() -> f32 {
+    1.0
 }
 
 fn time<'de, D: Deserializer<'de>>(d: D) -> Result<NsTime, D::Error> {

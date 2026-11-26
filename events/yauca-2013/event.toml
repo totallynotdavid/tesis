@@ -19,3 +19,13 @@ tq_s = 4.0
 source = [[1.50, 0.00, 1.00, 3.0], [6.50, 3.74, 2.87, 15.0], [7.80, 4.40, 3.30, 0.0]]
 receiver = [[5.57, 3.36, 2.65, 15.0], [6.50, 3.74, 2.87, 18.0], [7.80, 4.40, 3.30, 0.0]]
 bounce = [[6.50, 3.74, 2.87, 0.0]]
+
+[inversion]
+length = 60
+max_velocity = 4.0
+time_function = { shape = "trapezoid", t1 = 2, t2 = 4 }
+spans = [20, 20]
+basis = "double-couple"
+shift = -10
+# Along the trench strike, the hypocentre third of five.
+grid = { line = { azimuth = 310, spacing = 10, count = 5, reference = 3 } }

@@ -18,12 +18,14 @@ writers produced.
 cargo run -- fetch events/yauca-2013/event.toml   # FDSN stations and records
 cargo run -- prep events/yauca-2013/event.toml    # fort.1
 cargo run -- green events/yauca-2013/event.toml   # fort.3
+cargo run -- invert events/yauca-2013/event.toml  # fort.16 and fort.4
 ```
 
 [docs/events.md](docs/events.md) describes the event file.
 
 - `src/`: the `kk` crate. It fetches FDSN records, converts them to `fort.1`,
-  and computes the Green's functions into `fort.3`.
+  computes the Green's functions into `fort.3`, and inverts them for the
+  subevents into `fort.16` and `fort.4`.
 - `events/`: event files, one directory per event.
 - `reference/`: the Kikuchi-Kanamori Fortran 77 programs, example inputs,
   golden outputs, and the advisor's MATLAB post-processing scripts.
