@@ -32,7 +32,9 @@ cargo run -- sweep events/yauca-2013/event.toml structures/*.toml  # one run per
 - `structures/`: velocity structures for `kk green` and `kk sweep`.
 - `reference/`: the Kikuchi-Kanamori Fortran 77 programs, example inputs,
   golden outputs, and the advisor's MATLAB post-processing scripts.
-- `paper/`: the thesis proposal and lab reports, in LaTeX.
+- `paper/`: the thesis proposal, in Typst (`mise run paper` builds
+  `paper/build/perfil_tit.pdf`), and the lab reports as delivered LaTeX
+  artifacts.
 
 The code map is in [docs/architecture.md](docs/architecture.md). The reference
 build, the program chains and the file formats are in

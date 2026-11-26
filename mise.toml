@@ -1,25 +1,40 @@
 [tools]
 rust = { version = "1.100.0", components = "rustfmt,clippy" }
+typst = "0.15.1"
+typstyle = "0.15.2"
 
 [tasks.install]
 description = "Fetch the crate dependencies pinned in Cargo.lock"
 run = "cargo fetch --locked"
 
 [tasks.lint]
-description = "Check rustfmt formatting and run clippy with warnings denied"
+description = "Check rustfmt, clippy and Typst formatting"
+depends = ["lint:typst"]
 run = [
   "cargo fmt --check",
   "cargo clippy --locked --all-targets -- -D warnings",
 ]
 
+[tasks."lint:typst"]
+description = "Check the formatting of the Typst sources with typstyle"
+run = "typstyle --check paper"
+
+[tasks.fix]
+description = "Format the Typst sources in place"
+run = "typstyle -i paper"
+
 [tasks.test]
 description = "Run the tests, including the gfortran parity test"
 run = "cargo test --locked"
+
+[tasks.paper]
+description = "Compile the thesis proposal to paper/build/perfil_tit.pdf"
+run = "typst compile paper/perfil_tit.typ paper/build/perfil_tit.pdf"
 
 [tasks.golden]
 description = "Rebuild the Fortran programs and rewrite reference/golden"
 run = "make -C reference golden"
 
 [tasks.check]
-description = "Run every check CI runs: lint and test"
-depends = ["lint", "test"]
+description = "Run every check CI runs: lint, test and the paper build"
+depends = ["lint", "test", "paper"]
