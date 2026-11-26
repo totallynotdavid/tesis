@@ -86,17 +86,32 @@ fn prep(path: &Path) -> Result<(), String> {
 
     let event = config.event();
     let window = config.window();
+    // One note per channel; `converted[k]` is the channel of `stations[k]`.
+    let mut notes = Vec::new();
+    let mut converted = Vec::new();
     let mut stations = Vec::new();
     for channel in &channels {
         let station = fetch::record(channel, &traces)
             .and_then(|r| prep::convert(&event, &earth, &r, &window).map_err(|s| s.to_string()));
         match station {
             Ok(s) => {
-                println!("{}  converted", channel.id());
+                converted.push(notes.len());
+                notes.push("converted".to_string());
                 stations.push(s);
             }
-            Err(e) => println!("{}  skipped: {e}", channel.id()),
+            Err(e) => notes.push(format!("skipped: {e}")),
         }
+    }
+    let skips = prep::outliers(&stations);
+    for (&i, skip) in converted.iter().zip(&skips) {
+        if let Some(skip) = skip {
+            notes[i] = format!("skipped: {skip}");
+        }
+    }
+    let mut skips = skips.iter();
+    stations.retain(|_| skips.next().is_some_and(Option::is_none));
+    for (channel, note) in channels.iter().zip(&notes) {
+        println!("{}  {note}", channel.id());
     }
     let waveforms = Waveforms {
         title: prep::title(&event, &earth),

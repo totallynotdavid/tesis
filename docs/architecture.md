@@ -74,6 +74,12 @@ returns a `Station` or the `Skip` that names why the record was dropped.
   `Skip::Upsampling`. The reference interpolates.
 - Counts without deconvolution (`id = 3`) are not offered.
 
+The reference leaves bad channels to the analyst. `outliers` drops them once
+every record is converted: a station whose peak over its spreading factor is
+more than `OUTLIER` (5) times the median of its component's stations is
+skipped as `Skip::Amplitude`. Yauca's good stations span 0.7 to 1.5 times the
+median; IU.RCBR, whose borehole channel drifts with no zero crossing, is 22.
+
 ## Green
 
 `kk green` reads `fort.1` and the event file's structure and writes `fort.3`.
