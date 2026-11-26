@@ -4,4 +4,5 @@ pub mod fft;
 pub mod formats;
 pub mod green;
 pub mod inversion;
+pub mod plot;
 pub mod prep;

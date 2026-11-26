@@ -7,7 +7,7 @@ use clap::{Parser, Subcommand};
 use kk::event::{Config, Files};
 use kk::fetch::{self, miniseed, stationxml};
 use kk::formats::waveforms::{self, Waveforms};
-use kk::formats::{greens, solution};
+use kk::formats::{greens, plot, solution};
 use kk::prep::{self, earth::Tables};
 use kk::{green, inversion};
 
@@ -31,6 +31,8 @@ enum Command {
     /// Invert fort.1 and fort.3 for the subevents into fort.16 and fort.4,
     /// beside the event file.
     Invert { event: PathBuf },
+    /// Draw fort.4 as solution.svg and waveforms.svg, beside the event file.
+    Plot { event: PathBuf },
 }
 
 fn main() -> ExitCode {
@@ -39,6 +41,7 @@ fn main() -> ExitCode {
         Command::Prep { event } => prep(&event),
         Command::Green { event } => green(&event),
         Command::Invert { event } => invert(&event),
+        Command::Plot { event } => draw(&event),
     };
     match result {
         Ok(()) => ExitCode::SUCCESS,
@@ -147,8 +150,22 @@ fn invert(path: &Path) -> Result<(), String> {
     let solution =
         inversion::invert(&parameters, &waveforms, &greens).map_err(|e| e.to_string())?;
     write(&files.fort16, solution::report(&solution).as_bytes())?;
-    write(&files.fort4, &solution::plot(&solution))?;
+    write(&files.fort4, &plot::write(&(&solution).into()))?;
     print!("{}", solution::summary(&solution));
+    Ok(())
+}
+
+fn draw(path: &Path) -> Result<(), String> {
+    let files = Files::beside(path);
+    let data =
+        plot::read(&read(&files.fort4)?).map_err(|e| format!("{}: {e}", files.fort4.display()))?;
+    write(&files.solution, kk::plot::solution(&data).as_bytes())?;
+    write(&files.fits, kk::plot::waveforms(&data).as_bytes())?;
+    println!(
+        "{} and {} written",
+        files.solution.display(),
+        files.fits.display()
+    );
     Ok(())
 }
 

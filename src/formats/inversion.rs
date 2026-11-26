@@ -100,7 +100,7 @@ impl Shape {
         Self::CODES.iter().position(|&s| s == self).unwrap() as i32
     }
 
-    fn from_code(code: i32) -> Option<Self> {
+    pub(super) fn from_code(code: i32) -> Option<Self> {
         Self::CODES.get(usize::try_from(code).ok()?).copied()
     }
 }

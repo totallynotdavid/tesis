@@ -83,7 +83,7 @@ impl<'a> Reader<'a> {
         usize::try_from(value).map_err(|_| self.error(format!("count {value} is negative")))
     }
 
-    fn error(&self, message: String) -> Error {
+    pub(super) fn error(&self, message: String) -> Error {
         Error {
             offset: self.offset,
             message,

@@ -147,6 +147,8 @@ pub struct Files {
     pub fort3: PathBuf,
     pub fort4: PathBuf,
     pub fort16: PathBuf,
+    pub solution: PathBuf,
+    pub fits: PathBuf,
 }
 
 impl Config {
@@ -268,6 +270,8 @@ impl Files {
             fort3: dir.join("fort.3"),
             fort4: dir.join("fort.4"),
             fort16: dir.join("fort.16"),
+            solution: dir.join("solution.svg"),
+            fits: dir.join("waveforms.svg"),
         }
     }
 }

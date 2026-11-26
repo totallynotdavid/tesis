@@ -5,6 +5,7 @@ kk fetch events/yauca-2013/event.toml   # writes stations.xml and waveforms.msee
 kk prep events/yauca-2013/event.toml    # writes fort.1
 kk green events/yauca-2013/event.toml   # writes fort.3
 kk invert events/yauca-2013/event.toml  # writes fort.16 and fort.4
+kk plot events/yauca-2013/event.toml    # writes solution.svg and waveforms.svg
 ```
 
 Each command reads the event file and keeps its files in the event file's
@@ -171,3 +172,15 @@ It prints the moment magnitude and the residual variance:
 ```text
  Mw, Var. =    7.60  0.9758
 ```
+
+## Plot
+
+`kk plot` reads `fort.4` and writes two figures:
+
+- `solution.svg`: the moment rate, the grid with each subevent's point, and
+  one beachball per subevent and for the total. A ball's area follows its
+  moment. Open circles are stations on the lower hemisphere.
+- `waveforms.svg`: each station's observed record in black and the synthetic
+  in red, eight to a column. Every record of one phase type shares one
+  amplitude scale, so a station that dwarfs the rest stands out. The number
+  under the name is the observed peak-to-peak.

@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use kk::formats::inversion::{Basis, Grid, Parameters, Shape, TimeFunction};
+use kk::formats::plot::{self, Plot};
 use kk::formats::{greens, inversion, solution, structure, waveforms};
 use kk::green::{self, Line, Sampling};
 
@@ -36,10 +37,12 @@ fn inversion_matches_the_denali_golden_files() {
         .unwrap();
     assert_eq!(solution::summary(&ours), section);
     assert_eq!(solution::report(&ours), text("golden/denali/fort.16"));
+    let golden = read("golden/denali/fort.4");
     assert!(
-        solution::plot(&ours) == read("golden/denali/fort.4"),
+        plot::write(&(&ours).into()) == golden,
         "same report, different fort.4"
     );
+    assert_eq!(plot::read(&golden).unwrap(), Plot::from(&ours));
 }
 
 /// The golden runs one basis, one time function and one depth. This runs the
@@ -147,7 +150,9 @@ fn inversion_matches_the_reference_program_on_every_basis() {
             String::from_utf8(theirs("fort.16")).unwrap(),
             "{case}"
         );
-        assert!(solution::plot(&ours) == theirs("fort.4"), "{case}: fort.4");
+        let fort4 = theirs("fort.4");
+        assert!(plot::write(&(&ours).into()) == fort4, "{case}: fort.4");
+        assert_eq!(plot::read(&fort4).unwrap(), Plot::from(&ours), "{case}");
     }
 }
 
