@@ -6,10 +6,10 @@ use clap::{Parser, Subcommand};
 
 use kk::event::{Config, Files};
 use kk::fetch::{self, miniseed, stationxml};
-use kk::formats::greens;
 use kk::formats::waveforms::{self, Waveforms};
-use kk::green;
+use kk::formats::{greens, solution};
 use kk::prep::{self, earth::Tables};
+use kk::{green, inversion};
 
 /// Kikuchi-Kanamori teleseismic body-wave inversion.
 #[derive(Parser)]
@@ -28,6 +28,9 @@ enum Command {
     /// Compute the Green's functions of fort.1 into fort.3, beside the event
     /// file.
     Green { event: PathBuf },
+    /// Invert fort.1 and fort.3 for the subevents into fort.16 and fort.4,
+    /// beside the event file.
+    Invert { event: PathBuf },
 }
 
 fn main() -> ExitCode {
@@ -35,6 +38,7 @@ fn main() -> ExitCode {
         Command::Fetch { event } => fetch(&event),
         Command::Prep { event } => prep(&event),
         Command::Green { event } => green(&event),
+        Command::Invert { event } => invert(&event),
     };
     match result {
         Ok(()) => ExitCode::SUCCESS,
@@ -129,6 +133,22 @@ fn green(path: &Path) -> Result<(), String> {
         greens.nk,
         files.fort3.display()
     );
+    Ok(())
+}
+
+fn invert(path: &Path) -> Result<(), String> {
+    let config = config(path)?;
+    let files = Files::beside(path);
+    let waveforms = waveforms::parse(&read_to_string(&files.fort1)?)
+        .map_err(|e| format!("{}: {e}", files.fort1.display()))?;
+    let greens = greens::read(&read(&files.fort3)?)
+        .map_err(|e| format!("{}: {e}", files.fort3.display()))?;
+    let parameters = config.parameters(&waveforms)?;
+    let solution =
+        inversion::invert(&parameters, &waveforms, &greens).map_err(|e| e.to_string())?;
+    write(&files.fort16, solution::report(&solution).as_bytes())?;
+    write(&files.fort4, &solution::plot(&solution))?;
+    print!("{}", solution::summary(&solution));
     Ok(())
 }
 

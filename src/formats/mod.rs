@@ -2,8 +2,11 @@
 //! rules; writers emit values that the Fortran programs read back exactly.
 
 pub mod fixed;
+pub mod fortran;
 pub mod greens;
+pub mod inversion;
 pub mod records;
+pub mod solution;
 pub mod structure;
 pub mod unformatted;
 pub mod waveforms;

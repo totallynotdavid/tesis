@@ -4,6 +4,7 @@
 kk fetch events/yauca-2013/event.toml   # writes stations.xml and waveforms.mseed
 kk prep events/yauca-2013/event.toml    # writes fort.1
 kk green events/yauca-2013/event.toml   # writes fort.3
+kk invert events/yauca-2013/event.toml  # writes fort.16 and fort.4
 ```
 
 Each command reads the event file and keeps its files in the event file's
@@ -104,4 +105,69 @@ EFI  computed
 FFC  computed
 ...
 35 stations, 1 depths, written to events/yauca-2013/fort.3
+```
+
+## Inversion
+
+`kk invert` needs the `[inversion]` table, which holds the `i_inversion`
+parameters:
+
+```toml
+[inversion]
+length = 60
+max_velocity = 4.0
+time_function = { shape = "trapezoid", t1 = 2, t2 = 4 }
+spans = [20, 20]
+basis = "double-couple"
+shift = -10
+grid = { line = { azimuth = 310, spacing = 10, count = 5, reference = 3 } }
+```
+
+| Field | Meaning | Default |
+| --- | --- | --- |
+| `title` | The `fort.16` title. 40 characters are kept. | `title` |
+| `length` | Seconds of each record fitted. | required |
+| `max_velocity` | A subevent starts no earlier than its distance from the hypocentre over this velocity, in km/s. | required |
+| `time_function` | The source time function: `shape`, and `t1`, `t2` in seconds. | required |
+| `spans` | The latest onset searched for each subevent, in seconds; one value per subevent. | required |
+| `basis` | The moment-tensor elements each subevent combines. | required |
+| `shift` | Samples added to every station's onset. | `0` |
+| `weight` | The weight of each station `kk green` kept. | `1` |
+| `weights` | Weights by station code, such as `{ CMLA = 0.5, RPN = 0 }`. Weight 0 leaves the station out. A code `kk green` did not keep is an error. | `{}` |
+| `grid` | The source points searched at each depth of `fort.3`. | required |
+
+The time function `shape` is one of:
+
+| `shape` | Function |
+| --- | --- |
+| `impulse` | One sample of area 1. |
+| `trapezoid` | Rise `t1`, top `t2 - t1`, fall `t1`. A ramp of rise `t1` if `t2 < t1`. |
+| `cosine` | The trapezoid with cosine flanks. |
+| `triangle` | A triangle peaking at `t1` and ending at `t2`. |
+
+The `basis` is one of:
+
+| `basis` | Elements |
+| --- | --- |
+| `deviatoric` | The five deviatoric elements. |
+| `double-couple` | The five deviatoric elements, constrained to a double couple. |
+| `strike-slip` | Mxy and Mxx-Myy: vertical strike-slip. |
+| `moment-tensor` | All six elements, with the isotropic part. |
+| `vertical-double-couple` | Four elements, constrained to a double couple with a vertical nodal plane. |
+
+The `grid` is a list of points or a line:
+
+```toml
+grid = { points = [[0, 0], [30, 120]] }   # [distance km, azimuth deg] from the hypocentre
+grid = { line = { azimuth = 310, spacing = 10, count = 5, reference = 3 } }
+```
+
+A line has `count` points `spacing` km apart along `azimuth`. Point
+`reference`, counted from 1, is at the hypocentre; it defaults to `1`.
+
+`kk invert` writes the subevents to `fort.16` and the plot data to `fort.4`.
+It prints the moment magnitude and the residual variance:
+
+```text
+ Mw, Var. =    7.60  0.9758
 ```

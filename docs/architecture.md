@@ -107,6 +107,55 @@ call saved (`-fno-automatic`). `bodyw` gives SV its own.
 unformatted files; [unformatted.rs](../src/formats/unformatted.rs) reads and
 writes their records.
 
+## Inversion
+
+`kk invert` reads `fort.1`, `fort.3` and the event file's `[inversion]` table
+and writes `fort.16` and `fort.4`. `Config::parameters` in
+[src/event.rs](../src/event.rs) turns the table into the `i_inversion`
+[Parameters](../src/formats/inversion.rs). It expands the station-code weights
+to one per station `green` kept, in `fort.1` order.
+
+[src/inversion/](../src/inversion/mod.rs) is `inversion`. `invert` runs these
+stages:
+
+1. `stime` builds the source time function. `records` convolves it with each
+   station's base elements and gives the station's delay at every grid point
+   and depth.
+2. `inverse` solves the normal equations at each depth with `ludcmp` and
+   `lubksb`.
+3. `search` finds each subevent: the grid point, onset and weights that most
+   reduce the residual. With more than one subevent, two more rounds refit
+   each one against the records with the others removed.
+4. `solution` sums the subevents and gives the standard deviation and the
+   moment magnitude.
+
+[linalg.rs](../src/inversion/linalg.rs) holds the Numerical Recipes routines
+and the cubic and quadratic solvers. [mechanism.rs](../src/inversion/mechanism.rs)
+holds the determinants, the double-couple constraint `zmom`, and `dcp`, which
+splits a tensor into a double couple and its axes.
+[src/formats/solution.rs](../src/formats/solution.rs) writes the `Solution`
+as `fort.16`, `fort.4` and the summary line. [fortran.rs](../src/formats/fortran.rs)
+formats reals and integers as gfortran's `F` and `I` descriptors do.
+
+Fortran `REAL` is `f32`, so the port computes in `f32`. It keeps the
+reference's constants, its order of operations, and comparisons that send NaN
+down the same branch. The module allows the clippy lints those choices trip.
+
+`invert` differs from the reference where the reference reads past an array
+or runs on bad input:
+
+- A phase outside 1 to 4, a first round with no fitting grid point, singular
+  normal equations, and a tensor whose eigenvalues do not converge are
+  errors. The reference runs on with stale values or pauses.
+- An onset that puts a correlation lag outside the record reads 0.
+- A source-time flank longer than the record is cut at the record.
+- A reference point `k0` outside the line of depths gives zero weights for
+  the standard deviation.
+- There are no array limits. The reference holds 1024 samples, 11 grid points
+  and 11 depths, 50 subevents and 40 stations.
+- The reference calls `dcp` at every improved grid point and discards the
+  result. `invert` calls it once per subevent.
+
 ## Parity
 
 [tests/parity.rs](../tests/parity.rs) parses the four example inputs, writes
@@ -129,3 +178,10 @@ instruments without poles, so the test also builds `green` with an SV `tp`
 patched in. It runs that build on Denali stations rewritten to SV, PP,
 horizontal components, WWSSN and poles and zeros, over four depths, under two
 structures. Every sample must match.
+
+[tests/inversion.rs](../tests/inversion.rs) requires `invert` on the Denali
+example to write the golden `fort.16`, `fort.4` and summary line byte for
+byte. The golden runs one basis, one time function and one depth, so the test
+also builds the reference `inversion` and runs both on Denali over six cases.
+The cases cover every basis and time function, points and lines, one and three
+depths, one to thirteen subevents, and stations left out by weight 0.
